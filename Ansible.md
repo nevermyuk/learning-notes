@@ -11,12 +11,87 @@
 
 - Must configure EPEL repository on system.
 
-  ```bash
-  sudo yum install ansible
-  sudo yum install git # version control for playbooks
-  ```
+```bash
+ssh user@control-node.com
+sudo yum install ansible
+sudo yum install git # version control for playbooks
+```
 
-## Set up ansible
+## User Authentication
+
+- Use ssh-keygen and ssh-copy-id
+- Best implemented using a common user across all Ansible controlled system
+
+#### **On Control Node**
+
+```bash
+ssh user@control-node.com 
+sudo useradd ansible
+```
+
+#### On Member Node
+
+```bash
+ssh user@app1.example.com # connect to app( member node)
+sudo useradd ansible # add new user
+sudo passwd ansible # set pw
+logout
+```
+
+#### Return to Control Node
+
+```bash
+sudo su - ansible # switch into super user Ansible
+ssh-keygen # generate ssh key
+ssh-copy-id app1.example.com # copy public key to member node
+							 # will prompt for password
+ssh app1.example.com #able to login without password because of correct ssh setup!
+```
+
+#### Return to Member Node
+
+```bash
+ssh user@app1.example.com # will ask for passwd
+sudo visudo #allow users to execute commands as root
+
+
+ansible ALL=(ALL) NOPASSWD: ALL  ## Add into visudo config.
+## Allow ansible(user) to run all command without password
+## Security wise, can be more granular instead. Take note of permissions.
+
+## Can use -K instead for sudo pwd when connecting if no NOPASSWD privilege.
+logout
+```
+
+#### Back to Control Node
+
+```bash
+pwd #/home/ansible
+vim inventory  # add hostname to inventory file , e.g. workstation
+#inventory
+workstation
+```
+
+```yaml
+vim git-setup.yml
+#git-setup.yml
+--- # install git on target host
+- hosts: workstation
+  become: yes
+  tasks:
+  - name: install git
+    yum:
+     name: git
+     state: latest
+```
+
+```bash
+ansible-playbook -i inventory git-setup.yml #install with playbook on inventory(workstation)
+```
+
+
+
+## Set up Ansible
 
 #### Configurations
 
@@ -34,13 +109,11 @@ vim /etc/ansible/hosts - default inventory list of hosts that Ansible manages
 ```
 
 1. Default : //ansible/hosts
-
 2. Specify by CLI : ansible -i
-
 3. Set in ansible.cfg
 
-
-```bash
+```ini
+#/etc/ansible/hosts
 mail.example.com ansible_port=25 #set mail port
 
 [webservers] 
@@ -51,41 +124,6 @@ appExample ansible_host=app1.example.com
 dbExample  ansible_host=db01.example.com
 [labservers]bash
 labExample ansible_host=lab01.example.com
-```
-
-## User Authentication
-
-- Use ssh-keygen and ssh-copy-id
-- Best implemented using a common user across all Ansible controlled system
-
-```bash
-ssh app1.example.com # connect to app1 ( member node)
-sudo useradd ansible # add new user
-sudo passwd ansible # set pw
-```
-
-#### **On Control Node**
-
-```bash
-exit # exit member node
-ssh control-node.example.com 
-sudo su - ansible # switch into super user Ansible
-ssh-keygen # generate ssh key
-ssh-copy-id app1.example.com # copy public key to member node
-# will prompt for password
-```
-
-#### On Member Node
-
-```bash
-ssh root@app1.example.com
-sudo visudo #allow users to execute commands as root
-
-## Allow ansible(user) to run all command without password
-## Security wise, can be more granular instead. Take note of permissions.
-ansible ALL=(ALL) NOPASSWD: ALL 
-
-## Can use -K instead for sudo pwd when connecting if no NOPASSWD privilege.
 ```
 
 ## [Ansible Docs](https://docs.ansible.com/)
@@ -265,13 +303,13 @@ Playbook Example
 hosts: webservers
 become: yes
 vars: 
-	target_service: httpd
-	target_state: started
+ target_service: httpd
+ target_state: started
 tasks:
-  - name: Ensure target state
-    service:
-	 name: "{{ target_service }}"
-	 state: "{{ target_state }}"
+ - name: Ensure target state
+   service:
+    name: "{{ target_service }}"
+    state: "{{ target_state }}"
 ```
 
 ## Ansible [Facts](https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#variables-discovered-from-systems-facts)
@@ -347,7 +385,7 @@ tasks:
 
 # Debug Example
 - debug:
-	msg: "System {{ inventory_hostname }} has uuid {{ansible_product_uuid}} "
+   msg: "System {{ inventory_hostname }} has uuid {{ansible_product_uuid}} "
 
 ```
 
