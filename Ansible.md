@@ -7,8 +7,6 @@
 - Installed on a single control node where a list of host inventory filesaand playbooks are kept
 - Heavy lifting performed on remote host, where Ansible Modules are executed.
 
-
-
 ## Playbooks
 
 YAML - describe desired state of something
@@ -70,12 +68,6 @@ ansible-playbook my-playbook.yml
 
 - Dry-run for ad-hoc commands and Playbooks
 - Validate playbook runs before making state changes on target systems
-
-
-
-
-
-
 
 # To install Ansible
 
@@ -200,3 +192,8 @@ ansible appExample -m yum -a "name=httpd state=latest"
 - `absent` and `removed` will remove the package
 
 Default is `None` or `Present`
+
+
+
+
+
