@@ -336,7 +336,7 @@ all:
 - Insert text into a given file
 
   ```bash
-ansible -i inventory workstation -m lineinfile -a "path=/home/ansible/testfile line='Hello Ansible' state=present"
+  ansible -i inventory workstation -m lineinfile -a "path=/home/ansible/testfile line='Hello Ansible' state=present"
   ```
 
 #### Get_url module
@@ -395,7 +395,7 @@ ansible -i inventory workstation -m lineinfile -a "path=/home/ansible/testfile l
 - Best practice, use package for mixed distro environment.
 
   ```bash
-ansible all -b -m package -a "name=httpd state=latest"
+  ansible all -b -m package -a "name=httpd state=latest"
   ```
 
 **Tips ** : Module names are different in different distros. Take note of this difference.
@@ -550,10 +550,10 @@ version: "1.0"
   become: yes
   tasks:
 	# Setting up webserver
-	- name: install httpd
-  	  yum:
-    	name: httpd
-    	state: latest
+   - name: install httpd
+  	 yum:
+      name: httpd
+      state: latest
 ```
 
 ### Example Playbook

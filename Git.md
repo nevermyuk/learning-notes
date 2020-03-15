@@ -9,7 +9,7 @@
 - **Navigate into an existing folder (aka change directory)**
 
   ```bash
-cd <FOLDERNAME>
+  cd <FOLDERNAME>
   ```
   
 - **List the items in a folder**
@@ -21,19 +21,19 @@ cd <FOLDERNAME>
 - **Turn Git on for a folder**
 
   ```bash
-git init
+  git init
   ```
 
 - **Check status of changes to a repository**
   ```bash
-git status
+  git status
   ```
 
 
 - **View changes to files**
 
   ```bash
-git diff
+  git diff
   ```
 
 - **Add a file's changes to be committed**
@@ -90,10 +90,10 @@ git diff
   ```
 - **Change a remote URL**
   ```bash
-git remote set-url
+  git remote set-url
   ```
 - **View remote connections**
   
-```bash
+  ```bash
   git remote -v
   ```
