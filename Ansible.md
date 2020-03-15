@@ -405,12 +405,16 @@ ansible all -b -m package -a "name=httpd state=latest"
 - Control system daemons
 - Compatible with systemd and older BSD init style of daemon management
 
-  ```bash
 # To start service
-  ansible -i inventory workstation -b -m service -a "name=httpd state=started enabled=yes"
+```bash
+ansible -i inventory workstation -b -m service -a "name=httpd state=started enabled=yes"
+```
+
   # To get service status
-  ansible -i inventory workstation -b -m service -a "name=httpd"
-  ```
+```bash
+ansible -i inventory workstation -b -m service -a "name=httpd"
+```
+
 
 
 
@@ -648,28 +652,27 @@ tasks:
 
 - 2 methods to include in playbook
 
-  - By CLI
 
-    ```bash
-    ansible-playbook playbook.yml -e @vars.yml
-    ```
+1. By CLI
 
-    -  **-e -- flag treat succeeding arguments as variable file.**
 
-  - By including vars_files in playbook.
+```bash
+ansible-playbook playbook.yml -e @vars.yml
+```
 
-  - 
+**-e -- flag treat succeeding arguments as variable file.**
 
-    
+2. By including vars_files in playbook.
 
-```yaml
+
+  ```yaml
 # file: /home/ansible/example_vars.yml
 target_service: httpd
 target_state: started
-```
+  ```
 
-```yaml
---- 
+  ```yaml
+---
 - hosts: webservers 
   become: yes 
   vars_files: /home/ansible/example_vars.yml 
@@ -678,7 +681,9 @@ target_state: started
     service: 
       name: "{{ target_service }}" 
       state: "{{ target_state }}"
-```
+  ```
+
+
 
 ## Templates with Template module
 
@@ -708,7 +713,7 @@ version={{ version }}
        dest: /opt/config 
 ```
 
-**Tip : - validate flag to help validation of configuration file**
+**Tip : -validate flag to help validation of configuration file**
 
 ## Ansible [Facts](https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#variables-discovered-from-systems-facts)
 
@@ -717,29 +722,32 @@ version={{ version }}
 - **Use setup module to retrieve facts**.
 
   - Parameters 
-    - "filter=RegExp"
+    - "filter=RegExp" to prune fact output.
     - --tree option to save all facts of remote systems.
 
 - Variables that are discovered not set by user.
 
 - Derived from speaking with remote system
 
-- ```bash
-ansible hostname -m setup ##return all facts
+  ```bash
+  ansible hostname -m setup ##return all facts
+  
   ansible appServer -m setup -a "filter=*dist* #to find hostname use Regex
   ```
-  
-- Can be referenced in playbooks
+
+
+- Can be referenced in playbooks using brackets or dot notation
 
   ```bash
-  {{ ansible_facts['default_ipv4']['address'] }} ##get ip
+  "{{ hostvars['localhost']['ansible_default_ipv4']['address'] }}"
+  "{{ hostsvars.stat.exists }}"
   ```
-  
+
 - **--tree**
 
   - JSON output of facts
 
-**Can be disabled**
+- **Can be Disabled with gather_fact keyword: no**
 
 ```yaml
 ##webserver yaml
@@ -748,26 +756,116 @@ ansible hostname -m setup ##return all facts
   gather_facts: no
 ```
 
+### Fact caching
+
+- Set to memory by default
+  - jsonfile by default
+  - **Use Redis** if required
+- Configure in ansible.cfg 
+
+### Conditional Execution in Playbook
+
+- Making plays conditional
+
+- **when** keyword used to test condition within a playbook.
+
+- Can use Jinja2 expression for conditional evaluation.
+
+- Using facts
+
+  ```yaml
+  --- #facts example
+  tasks: 
+  - name: "shut down Debian systems" 
+    command: /sbin/shutdown -t now when: ansible_os_family == "Debian" 
+  # note that Ansible facts and vars like ansible_os_family can be used 
+  # directly in conditionals without double curly braces 
+  ```
+
+- Module output conditionally
+
+  ```bash
+  --- #conditional example
+  - hosts: web_servers 
+    tasks: 
+    - shell: /usr/bin/example
+      register: example_output
+      ignore_errors: True
+     
+    - shell: /usr/bin/bar when: example_output.something == 123
+  ```
+
+  
+
+### Loops in playbooks
+
+- **loop** keyword
+- Can operate with a list variable
+- Can combine with conditional
+
+```yaml
+--- #loop example
+- hosts: localhost
+  become: yes
+  tasks:
+    -name: install software
+     yum:
+       name: "{{ item }}" #loop each item
+       state: latest
+      loop: 
+        - httpd
+        - nmap-ncat
+        - elinks
+```
+
+```yaml
+--- #loop example with var files
+- hosts: localhost
+  become: yes
+  vars_files:
+   - vars.yml
+  tasks:
+    -name: install software
+     yum:
+       name: "{{ item }}" #loop each item
+       state: latest
+      loop: "{{ software_list }}"
+```
+
+```yaml
+#vars.yml
+software_list:
+- httpd
+- nmap-ncat
+- elinks
+```
+
+
+
 ## Handlers
 
-- Mechanism that allows an action to be flagged for execution when a task performs a change
+- Mechanism that allows an action to be flagged for execution when a task performs a change.
+  - More efficient
 - **Notify** and **Listen** keyword
+  - names are to be exact for **notify**
+  - **listen** can be generic topics -- easier to trigger multiple handlers
 - **Notify** will **only flag handler if a task block make changes.**
 - **No matter how many times it is flagged, only runs during a play's final phase**
 
 ```yaml
--name : template config file
+- name : template config file
  template:
-  src: foo.conf
-  dest: /etc/foo.conf
+  src: config.j2
+  dest: /etc/config.conf
  notify:
   - restart memcached
-  
+  - restart cache service
+handlers: 
 - name : restart memcached
   service:
-   name: memcached
+   name: restart memcached
    state: restarted
-  listen: "restart memcached"
+  listen: "restart cache service "
 ```
 
 ## Troubleshooting and Debug
