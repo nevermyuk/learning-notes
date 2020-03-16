@@ -4,7 +4,7 @@
 
 ### Linux
 
-[Linux Foundation Certified SysAdmin](https://github.com/nevermyuk/learning-notes/blob/master/LFCSA.md)
+[Linux Foundation Certified SysAdmin](https://github.com/nevermyuk/learning-notes/blob/master/LFCS.md)
 
 ### Source and Version Control
 
