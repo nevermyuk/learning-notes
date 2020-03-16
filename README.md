@@ -2,7 +2,9 @@
 
 ✨Compilation of notes from courses,tutorials,webinars and books that I went through to learn about Programming and DevOps.✨
 
+### Linux
 
+[Linux Foundation Certified SysAdmin](https://github.com/nevermyuk/learning-notes/blob/master/LFCSA.md)
 
 ### Source and Version Control
 
