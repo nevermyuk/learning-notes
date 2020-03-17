@@ -12,7 +12,11 @@
 
 ### Configuration Management
 
-[Ansible](https://github.com/nevermyuk/learning-notes/blob/master/Ansible.md)
+[Ansible](https://github.com/nevermyuk/learning-notes/blob/master/Ansible/Ansible.md)
+
+##### Labs and examples
+
+[Template,variables and facts](https://github.com/nevermyuk/learning-notes/blob/master/Ansible/Labs/Templates-variables-facts.md)
 
 
 
