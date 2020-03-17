@@ -472,6 +472,29 @@ Default is `None` or `Present`
 
 - **Async_status module** - can be used to check status too.
 
+  
+
+## Parallelism
+
+- Ansible uses **Forks** to execute tasks in parallel
+
+- Each **fork** is able to run a tasks against a target host
+
+- Default is **5 Forks** can be changed, 
+
+  - In ansible.cfg
+  - With -F or --forks flag
+
+- **The more Forks, the more system resource will be required on Ansible control node** 
+
+### How Forks work?
+
+- Assuming one run a module against 5 hosts, module will execute simultaneously on all host.
+
+- **If more than 5 hosts are targeted,** hosts after the first 5 must wait for a fork to complete before forks will execute on the waiting hosts.
+
+  
+
 ## [Playbooks](https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html)
 
 - Use YAML - to describe desired state.
@@ -535,6 +558,8 @@ become: yes
 version: "1.0"
 
 ```
+
+
 
 ## Tasks
 
@@ -634,7 +659,7 @@ target_service=httpd";
 
 ```
 
-[**Register variable**](https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#registering-variables) -- save results of commands as a variable.
+#### [**Register variable**](https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#registering-variables) -- save results of commands as a variable.
 
 - To extract use copy module.
 
@@ -868,13 +893,166 @@ handlers:
   listen: "restart cache service "
 ```
 
-## Troubleshooting and Debug
+## Asynchronous Tasks in Playbook
+
+- By default, all playbook block tasks ran against a target host use a single SSH session
+- Ansible provide **async** feature to allow an operation to run asynchronously such that the status may be checked
+- **Helps to prevent interruption from SSH timeout** for long running operations
+- **Keywords**
+  1. **async** -- time out value -- default is unlimited
+  2. **poll** - value for how often Ansible should check back.
+     - If 0 , Ansible will not check back.
+
+```
+- name: 'Install docker async'
+  yum:
+    name: docker
+    state: installed
+  async: 1000
+  poll: 25
+```
+
+## Delegating Playbook Execution
+
+- Send certain tasks to be executed on specific hosts.
+
+- By delegating a task, task will only run on delegated host/group.
+
+- **delegate_to** keyword.
+
+  ```yaml
+  -hosts: webservers
+   tasks:
+   - name: remove from load balancer pool
+     command: /usr/bin/removefrompool {{ inventory_hostname }}
+     delegate_to: additionalwebservers # tasks will only run on additionalwebservers
+  ```
+
+- Delegating to **localhost**
+
+  - **local_action: <module name> [arg1=val1]**
+
+  - shorthand for delegation
+
+    ```yaml
+    local_action: yum name=httpd state=latest
+    ```
+
+## Parallelism in playbooks
+
+- Possible to control number of hosts acted upon at one time by Ansible
+- Use **Forks** - which are parallel Ansible processes that execute tasks
+  - Number of forks can be set using **-f** flag with ansible or ansible-playbook
+  - Default number of **5** set in **ansible.cfg**
+
+### Controlling Forks
+
+- **serial** keyword is used
+- Provide integer count or percentage.
+- **Limited by number of fork**
+- May also provide step up approach
+
+```yaml
+- hosts: webservers
+  max_fail_percentage: 10 # is 10% fail, ends.
+  serial:
+   - 1
+   - 3
+   - 5
+   - "80%"
+  tasks:
+   - name: Install httpd
+     yum:
+      name: httpd
+      state: latest
+```
+
+- **max_fail_percentage** - to allow a certain percentage to fail and Ansible still continue to play.
+
+## Run-once in Playbook
+
+- For scenarios where specific tasks only need to be executed once in a given playbook and not on every host.
+
+- **run_once** keyword
+
+  ```yaml
+  - hosts: centos
+    tasks:
+     - name: Go to sleep
+       command: /home/ansible/sleep.sh
+       async: 20
+       poll: 0
+       run_once: yes
+     - name: Install httpd
+       package:
+         name: httpd
+         state: latest
+       become: yes
+  ```
+
+- Can be used with delegate_to for better control over which host execute hosts.
+
+- **When used  with serial, run_once will run for each serial branch**
+
+## Error Handling in Playbook
+
+- Mitigate and deal with errors.
+- Run playbook against a specific host.
+
+```bash
+ansible-playbook <playbook> --limit <hostname>
+```
+
+- Use after playbook failure
+
+  - If playbook fails on any hosts, generate a file is created containing names of failed hosts.
+  - Generated file can be used with --limit flag to execute playbook against failed hosts.
+
+  ```bash
+  # Specify a list file using --limit @filename
+  ansible-playbook example.yml --limit @generatedfile
+  ```
+
+**Ansible can be configured to continue execution when error occurs** with :
+
+```yaml
+# in playbook; ignore_errors: yes
+- name: Install Things
+  yum:
+    name: Dontexist
+    state: latest
+  ignore_errors: yes
+```
+
+### Define Failure Conditions
+
+- **failed_when** keyword
+- Specify what it means to fail for a given task
+
+```yaml
+- name: Fail task when file name contain keyword
+  command: /home/ansible/willifail.sh
+  register: myoutput #register var
+  failed_when: "'FAIL' in myoutput.stdout"
+  changed_when: "'CHANGED' in myoutput.stdout"
+```
+
+### Block Groups
+
+- 3 key blocks to organize tasks
+  1. **block** - Group tasks into a block
+  2. **rescue** - special block that is executed when preceding tasks fails
+     - Skips if preceding tasks pass
+  3. **always** - always executed after preceding block
+     - Can be omitted
+
+### Troubleshooting and Debug
 
 - **Debug** module and **Register** module
   - Print information about in-progress plays
 - Debug take 2 primary parameters that are mutually exclusive
   - msg: A message printed to STDOUT
-  - var: A var whose content is printed to STDOUT
+  - var: var content that is printed to STDOUT
 
 ```yaml
 # Register with Debug Example
@@ -886,7 +1064,7 @@ handlers:
   		path: /var/www/html/index.html
   	register: task_debug
   - debug:
-      msg: "Output of lineinfile is {{ task_debug }}" # < msg and var
+      var: task_debug # service status will be printed out
       
 
 # Debug Example
@@ -894,6 +1072,99 @@ handlers:
    msg: "System {{ inventory_hostname }} has uuid {{ansible_product_uuid}} "
 
 ```
+
+## Ansible Tags
+
+- Tagging tasks and plays
+- Allow running of selected tagged plays or tasks
+- May skip tags during execution
+- Specify which tag to run or skip via arguments supplied to ansible-playbook command.
+
+```yaml
+--- #tag.yml, Tag example
+- hosts: localhost
+  tasks: 
+   - name: Install httpd
+     become: yes
+     yum:
+       name: httpd
+       state: latest
+     tags:
+      - webserver
+   - name: add line to file
+     lineinfile:
+       path: /home/ansible/taggedfile.txt
+       create: yes
+       line: "Add me into file"
+     tags:
+      - addline
+```
+
+```bash
+# webserver tagged tasks will run
+ansible-playbooks tags.yml --tags webserver
+ansible-playbooks tags.yml --t webserver  #shorthand
+# skip specified tag
+ansible-playbooks tags.yml --skip-tags webserver
+```
+
+## Ansible Vault
+
+- **ansible_vault command**
+- Used to encrypt password files and any files.
+- File encrypted with Ansible Vault is called a **vault**
+
+```bash
+# will ask for vault password
+ansible-vault encrypt filename
+ansible-vault decrypt filename
+# to specify vault-password interactively:
+ansible-playbook site.yml --ask-vault-pass
+```
+
+**Recommended way to provide a vault password from CLI is to use**
+
+-  --vault-id
+
+- can be passed as a vault file or a prompt flag (--vault-id@prompt)
+
+```bash
+#synta, vaultname is the label.
+ansible-vault encrypt --vault-id vaultname@prompt filename
+ansible-vault encrypt --vault-id dev@prompt vault
+# To decrypt, use @prompt or @filename for vault password
+ansible-playbook secret.yml --vault-id dev@prompt 
+ansible-playbook secret.yml --vauld-id dev@passwordfile
+```
+
+##### **Prompt is recommended as password file is saved as plaintext.**
+
+#### Sub-commands
+
+```bash
+#view file
+ansible-vault view vault
+#edit file
+ansible-vault edit vault
+#rekey - change password
+ansible-vault rekey vault
+#encrypt_string , encrypt a string that can insert directly/in-line in playbook
+ansible-vault encrypt_string --vault-id dev@prompt 'var: value'
+```
+
+#### **Important: Add no-log to playbook to avoid exposing sensitive information during play execution**
+
+```yaml
+tasks: 
+  name: Add secret line to secret.txt
+  lineinfile:
+   path: /home/ansible/secret.txt
+   create: yes
+   line: " {{ password }}"
+  no_log: true
+```
+
+
 
 ## [Check mode / Dry run](https://docs.ansible.com/ansible/latest/user_guide/playbooks_checkmode.html)
 
@@ -919,25 +1190,96 @@ ansible-playbook foo.yml --check
     check_mode: yes
 ```
 
-## Parallelism
 
-- Ansible uses **Forks** to execute tasks in parallel
 
-- Each **fork** is able to run a tasks against a target host
+## [Ansible Roles](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html)
 
-- Default is **5 Forks** can be changed, 
+- Roles provide a way of automatically loading vars_files,tasks and handlers based on a known file structure.
 
-  - In ansible.cfg
-  - With -F or --forks flag
+- Make sharing config template easier
 
-- **The more Forks, the more system resource will be required on Ansible control node** 
+- Requires a particular directory structure
+
+- Role definition must contain at least one of the noted directory
+
+  1. `tasks` - contains the main list of tasks to be executed by the role.
+  2. `handlers` - contains handlers, which may be used by this role or even anywhere outside this role.
+  3. `defaults` - default variables for the role (see [Using Variables](https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#playbooks-variables) for more information).
+  4. `vars` - other variables for the role (see [Using Variables](https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#playbooks-variables) for more information).
+  5. `files` - contains files which can be deployed via this role.
+  6. `templates` - contains templates which can be deployed via this role.
+  7. `meta` - defines some meta data for this role. See below for more details.
+
+- Usually stored in /etc/ansible/roles
+
+- Except for **templates** and **files**,each directory must include main.yml if it is in use
+
+- **main.yml** serves as entry point for the role.
+
+- Files in **tasks,templates and files directories** may be reference without path within the role
+
+- Role with given set of params will only be applied once, even if called multiple times in play
+
+  - It called with different parameters, it will rerun.
+
+- **allow_duplicate** prevent the role from being applied more than once in the host
+
+- **Important : Take note of role duplication with dependencies**
+
+  #### Variables precedence 
+
+-  3 primary ways to interact with variables within a role
+
+  - vars directory - highest
+  - parameter - passed inline as arguments.
+  - defaults directory - lowest
+
+- Vars defined within a role can be accessed across roles
+
+- Use **-e flag** for use in a role - overrides all variables.
+
+- **Best practice** : Prepend role name to all variable name within role.
+
+  - Namespace
 
   
 
-### How Forks work?
+### Using Roles
 
-- Assuming one run a module against 5 hosts, module will execute simultaneously on all host.
-- **If more than 5 hosts are targeted,** hosts after the first 5 must wait for a fork to complete before forks will execute on the waiting hosts.
+- **roles** keywords
+
+```yaml
+- hosts: webservers
+  roles:
+    - webservers
+    - appservers
+```
+
+##### **Conditionally import roles**
+
+```yaml
+- hosts: webservers
+  tasks:
+    - include_role:
+        name: some_role
+      tags:
+        - bar
+        - baz
+      when: "ansible_facts['os_family'] == 'Centos'"
+```
+
+### Ansible Galaxy
+
+- **ansible-galaxy** to generate a role directory
+
+  
+
+#### [Static vs Dynamic](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse.html)
+
+- Include is Dynamic
+  - Ansible will only pull data from role at runtime when it is going to be used.
+- Import is Static
+  - Ansible will replace definition with role data in-line.
 
 
 
