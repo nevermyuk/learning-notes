@@ -75,7 +75,7 @@
        # Allows secure ssh connection from control nodes into member nodes.
        ```
 
-     - On **Control node** edit '/etc/sudoer' . - Escalate permissions without password
+     - On **All member node** edit '/etc/sudoer' . - Escalate permissions without password
 
        ```bash
        sudo visudo
@@ -549,7 +549,7 @@ version: "1.0"
 - hosts: localhost
   become: yes
   tasks:
-	# Setting up webserver
+# Setting up webserver
    - name: install httpd
   	 yum:
       name: httpd
@@ -620,17 +620,17 @@ target_service=httpd";
 
 ```yaml
 --- # Playbook example
-hosts: webservers
-become: yes
-vars: 
- target_service: httpd
- target_state: started
- register: cmd_output # Register variable
-tasks:
- - name: Ensure target state
-   service:
-    name: "{{ target_service }}"
-    state: "{{ target_state }}"
+- hosts: webservers
+  become: yes
+  vars: 
+    target_service: httpd
+    target_state: started
+    register: cmd_output # Register variable
+   tasks:
+     - name: Ensure target state
+     service:
+       name: "{{ target_service }}"
+       state: "{{ target_state }}"
 
 ```
 
