@@ -1,0 +1,55 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+ Quan
+ Create MySQL DB with Security Group.
+ Require a Subnet Group created and SG to control access.
+ A username and password serve as master for db.
+ Should be params in script
+
+Parameters: 
+    EnvironmentName:
+        Description: An environment name that will be prefixed to resource names
+        Type: String
+    DBUsername:
+        Description: Please provide username for database
+        Type: String
+    DBPassword:
+        Description: Please provide password for database
+        Type: String   
+    DBStorage:
+        Description: Please provide storage type
+        Type: String    
+        Default: 5
+    DBInstanceClass:
+        Description: Please provide instance class
+        Type: String   
+        Default: db.t2.micro
+        
+Resources: 
+  mySQLDBSubnetGroup: 
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties: 
+      DBSubnetGroupDescription: "Subnets for MySQL DB"
+      DBSubnetGroupName: "MySQL DB Subnet Group"
+      SubnetIds: 
+        - Fn::ImportValue:
+            !Sub "${EnvironmentName}-PRI1-SN"
+        - Fn::ImportValue:
+            !Sub "${EnvironmentName}-PRI2-SN"
+
+  MySQLDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      VPCSecurityGroups:
+        - Fn::ImportValue:
+            !Sub "${EnvironmentName}-WEB-SG1"
+      AllocatedStorage: !Ref DBStorage
+      DBInstanceClass: !Ref DBInstanceClass
+      Engine: MySQL
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref mySQLDBSubnetGroup
+      PubliclyAccessible: false
+    DeletionPolicy: "Retain"
