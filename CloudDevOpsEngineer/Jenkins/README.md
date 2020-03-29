@@ -44,7 +44,7 @@ DevOps is the combination of industry best practices, and set of tools that impr
 - Increases the speed of software evolution
 - Have better reliability of the software
 - Have scalability using automation,
-- Improved collaboration among teams. The two most important practices are - **Continuous Integration / Continuous Delivery or Deployment (CI/CD)** and Infrastructure as Code (IaaC).
+- Improved collaboration among teams. The two most important practices are - **Continuous Integration / Continuous Delivery or Deployment (CI/CD)** and Infrastructure as Code (IaC).
 
 ## What is CI/CD?
 
@@ -89,3 +89,20 @@ CI/CD is a consistent and automated way for a DevOps team to build, package, tes
   -  Development environment for building the code,
   - Staging environment for testing
   - Production environment for deployment
+
+## Pipeline Testing
+
+
+
+### Key ideas
+
+- **Linting** - It is the process of running a program that checks the Pipeline code for potential syntax errors.
+- **Security Testing** - Performed with a variety of software to test for Common Vulnerabilities and Exposures (CVE). There are a variety of [security testing plugins available for Jenkins](https://plugins.jenkins.io/ui/search?sort=relevance&categories=buildManagement&labels=&view=Tiles&page=1&query=security testing). 
+  - Aqua - a  Jenkins plugin designed for testing Docker containers. For testing against CVE (Common Vulnerabilities and Exposures).
+- **Performance Testing** - By setting up a smaller scale environment as compared to *production*, with Jenkins and running simulated host calls into that environment to determine how the new environment performs under a particular workload. It is a two-stage process -
+  - **Stage 1 - Run Apache JMeter** - JMeter is a testing tool used for estimating the performance of the newly created Jenkins environment. [JMeter Tutorial](https://wiki.jenkins.io/display/JENKINS/How+to+run+JMeter+with+Jenkins)
+  - **Stage 2 - Capture Reports** - Jenkins has [Performance plugin](https://plugins.jenkins.io/performance/) to capture reports from popular testing tools, such as JMeter, Selenium, and many others in the XML and CSV format. 
+- **Integration Testing** - It is testing the Pipeline code from different modules to make sure it all works together. It occurs after unit testing. Jenkins provides [JUnit plugin](https://plugins.jenkins.io/junit/) as *unit-testing framework to write repeatable tests*. Refer [here](https://jenkins.io/doc/pipeline/steps/junit/) for reading the functionality of JUnit plugin using **steps**.
+
+
+
