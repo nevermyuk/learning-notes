@@ -14,5 +14,14 @@
 
 [Difference between functional and imperative programming](https://stackoverflow.com/questions/17826380/what-is-difference-between-functional-and-imperative-programming-languages)
 
+#### 
 
+- [More on Makefiles](https://www.gnu.org/software/make/manual/html_node/Standard-Targets.html#Standard-Targets)
+- [Makefile tutorial](http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/)
+- [Docker Homepage](https://www.docker.com/)
+- [Play with Docker Classroom](https://training.play-with-docker.com/)
+- [Docker Orientation and Setup](https://docs.docker.com/get-started/)
 
+- [Increase reliability in data science and machine learning projects with CircleCI](https://circleci.com/blog/increase-reliability-in-data-science-and-machine-learning-projects-with-circleci/)
+- [AWS Cloud9](https://aws.amazon.com/cloud9/)
+- [ECR Registry Upload](https://aws.amazon.com/blogs/compute/authenticating-amazon-ecr-repositories-for-docker-cli-with-credential-helper/)
