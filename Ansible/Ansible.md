@@ -102,7 +102,7 @@
 
    - [Examples](##Examples)
 
-## How To Install Ansible
+## How To Install Ansible on RHEL
 
 - Install on control node( Master/Main controller)
 

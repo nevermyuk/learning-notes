@@ -9,7 +9,7 @@
 
 
 
-```
+```yaml
   Parameters:
     # Parameters are entirely optional.
     # but using them will make your cloudformation templates more reusable
