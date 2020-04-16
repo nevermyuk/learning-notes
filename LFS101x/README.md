@@ -1248,3 +1248,320 @@ $ chown user:group file # change both owner and group at the same time
 $ chgroup group file
 ```
 
+# Manipulating Text
+
+## Cat 
+
+`cat` for concatenate , often used to print,read and view file content
+
+```bash
+$ cat <filename>
+```
+
+`tac` - print file in reverse order
+
+```bash
+$ tac <filename>
+```
+
+
+
+```bash
+$ cat file1 file2	# Concatenate multiple files and display the output; 
+# Entire $ content of the first file is followed by that of the second file
+$ cat file1 file2 > newfile	# Combine multiple files and save the output into a new file
+$ cat file >> existingfile	# Append a file to the end of an existing file
+$ cat > file	# Any subsequent lines typed will go into the file, until CTRL-D is typed
+$ cat >> file	# Any subsequent lines are appended to the file, until CTRL-D is typed
+
+$ cat << EOF > somefile
+> Anything will go into file
+> Yes it will!
+> Last line
+> EOF
+```
+
+## Working with large Files
+
+```bash
+$ less somefile
+$ cat somefile | less
+```
+
+### head
+
+`head` - print first file line of file
+
+### tail
+
+`tail` - print last few line of file
+
+### Viewing Compressed file
+
+- Can only use version of programs designed to work directly with compressed files
+
+```bash
+$ zcat compressed-file.txt.gz	# To view a compressed file
+$ zless somefile.gz
+or
+$ zmore somefile.gz	# To page through a compressed file
+$ zgrep -i less somefile.gz	# To search inside a compressed file
+$ zdiff file1.txt.gz file2.txt.gz	# To compare two compressed files
+```
+
+## sed
+
+sed is a powerful text processing tool and is one of the oldest, earliest and most popular UNIX utilities.
+
+-  It is used to modify the contents of a file or input stream, 
+- usually placing the contents into a new file or output stream.
+-  Abbreviation for **S**tream **Ed**itor 
+- Can filter text, as well as perform substitutions in data streams.
+
+Data from an input source/file (or stream) is taken and moved to a working space. The entire list of operations/modifications is applied over the data in the working space and the final contents are moved to the standard output space (or stream).
+
+```bash
+$ sed -e command <filename>
+# Specify editing commands at the command line, operate on file and put the output on standard out (e.g. the terminal)
+$ sed -f scriptfile <filename>	
+# Specify a scriptfile containing sed commands, operate on file and put output on standard out
+```
+
+#### sed basic operations
+
+```bash
+$ sed s/pattern/replace_string/ file	# Substitute first string occurrence in every line
+$ sed s/pattern/replace_string/g file	# Substitute all string occurrences in every line
+$ sed 1,3s/pattern/replace_string/g file	
+# Substitute all string occurrences in a range of lines
+$ sed -i s/pattern/replace_string/g file	
+# Save changes for string substitution in the same file
+```
+
+## awk
+
+awk is used to extract and then print specific contents of a file and is often used to construct reports.
+
+-  It was created at Bell Labs in the 1970s
+- Derived its name from the last names of its authors: Alfred **A**ho, Peter **W**einberger, and Brian **K**ernighan.
+
+- Is a powerful utility and interpreted programming language.
+- Is used to manipulate data files, retrieving, and processing text.
+- It works well with fields (containing a single piece of data, essentially a column) and records (a collection of fields, essentially a line in a file).
+
+```bash
+awk ‘command’  file	# Specify a command directly at the command line
+awk -f scriptfile file	# Specify a file that contains the script to be executed
+```
+
+#### awk basic operations
+
+```bash
+awk '{ print $0 }' /etc/passwd	# Print entire file
+awk -F: '{ print $1 }' /etc/passwd	# Print first field (column) of every line, separated by a space
+awk -F: '{ print $1 $7 }' /etc/passwd	# Print first and seventh field of every line
+```
+
+#### Parsing with awk, sort and uniq
+
+```bash
+$ awk -F: '{print $7}' /etc/passwd | sort -u
+$ awk -F: '{print $7}' /etc/passwd | sort | uniq
+```
+
+
+
+## File Manipulation Utility
+
+#### sort 
+
+`sort` is used to rearrange the lines of a text file, in either ascending or descending order according to a sort key.
+
+```bash
+$ sort <filename>	 # Sort the lines in the specified file, according to the characters at the beginning of each line
+$ cat file1 file2 | sort	# Combine the two files, then sort the lines and display the output on the terminal
+$ sort -r <filename>	# Sort the lines in reverse order
+$ sort -k 3 <filename>	# Sort the lines by the 3rd field on each line instead of the beginning
+$ sort -u <filename> # check for  unique values after sorting the records (lines) same as uniq
+```
+
+#### uniq
+
+`uniq` removes duplicate consecutive lines in text file and useful for simplifying text display
+
+- Requires duplicate entries to be consecutive
+- **Must run sort first and pipe output into uniq**
+- use sort with -u flag instead to do it in one step.
+
+```bash
+$ sort file1 file2 | uniq > file3  # remove duplicate entries from multiple files at once
+$ sort -u file1 file2 > file3 # same as previous
+
+$ uniq -c filename # count number of duplicate
+
+```
+
+#### paste
+
+`paste`  can be used to combine fields (such as name or phone number) from different files, as well as combine lines from multiple files
+
+- Different columns can be identified based on delimiters (spacing used to separate two fields).
+- Delimiters can be a blank space, a tab, or an **Enter**. 
+
+paste accepts 
+
+- -d delimiters, which specify a list of delimiters to be used instead of tabs for separating consecutive values on a single line. 
+  - Each delimiter is used in turn; when the list has been exhausted, paste begins again at the first delimiter.
+- -s, which causes paste to append the data in series rather than in parallel; that is, in a horizontal rather than vertical fashion.
+
+```bash
+$ paste file1 file2
+$ paste -d, file1 file2
+$ paste -d ':' phone names
+```
+
+#### join
+
+`join` - used to join files without repeating data of common columns.
+
+- It first checks whether the files share common fields, such as names or phone numbers, and then joins the lines in two files based on a common field.
+
+```bash
+$  join file1 file2
+```
+
+#### split
+
+`split` used to break up (or split) a file into equal-sized segments for easier viewing and manipulation, and is generally used only on relatively large files.
+
+- By default, **split** breaks up a file into 1000-line segments. 
+- The original file remains unchanged, and a set of new files with the same name plus an added prefix is created. 
+- By default, the **x** prefix is added. 
+
+```bash
+$ split infile <Prefix>
+$ wc -l american-english # split american-english dictionary 
+$ split american-english dictionary # split into 100 equal sized segname named dictionaryx
+```
+
+## Regular Expression and Search Patterns
+
+`Regular Expression`  are text strings used for matching a specific pattern, or to search for a specific location, such as the start or end of a line or a word. Regular expressions can contain both normal characters or so-called meta-characters, such as `*` and `$`.
+
+- Text editor and utilities such as `vi`,`sed`,`awk`,`grep` work extensively with RegEx including Programming Languages.
+
+```
+.(dot)	Match any single character
+a|z	Match a or z
+$	Match end of string
+^	Match beginning of string
+*	Match preceding item 0 or more times
+
+
+a..	matches azy
+b.|j.	matches both br and ju
+..$	matches og
+l.*	matches lazy dog
+l.*y	matches lazy
+the.*	matches the whole sentence
+```
+
+#### grep
+
+`grep` is extensively used as text searching tool. Scans file for specified patterns and used with RegEx and simple strings.
+
+
+
+```bash
+$ grep [pattern] <filename>	#Search for a pattern in a file and print all matching lines
+$ grep -v [pattern] <filename>	# Print all lines that do not match the pattern
+$ grep [0-9] <filename>	# Print the lines that contain the numbers 0 through 9
+$ grep -C 3 [pattern] <filename>	
+# Print context of lines (specified number of lines above and below the pattern) for matching the pattern. Here, the number of lines is specified as 3
+```
+
+#### using grep
+
+```bash
+$ grep user /etc/passwd # find username 
+$ grep ftp /etc/services # find all entries with ftp
+$ grep ftp /etc/services | grep tcp # restrict to tcp
+$ grep -n ftp /etc/services | grep -v tcp # restrict to those that do not use tcp and print line number
+$ grep -e ^ts -e st$ /etc/services # get all strings that start with ts or end with st
+```
+
+
+
+#### strings
+
+`strings` used to extract al printable character strings found in file or files given as arguments.
+
+useful in locating human-readable content embedded in binary file; **for text files can just use grep.**
+
+```bash
+$ strings book1.xls | grep my_string # search for my_string in spreadsheet
+```
+
+#### tr
+
+`tr` to translate specified character into other character or delete them
+
+```bash
+$ tr [options] set1 [set2]
+$ tr abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ	
+# Convert lower case to upper case
+$ tr '{}' '()' < inputfile > outputfile	
+# Translate braces into parenthesis
+$ echo "This is for testing" | tr [:space:] '\t'	
+# Translate white-space to tabs
+$ echo "This   is   for    testing" | tr -s [:space:] 
+# Squeeze repetition of characters using -s
+$ echo "the geek stuff" | tr -d 't'	
+# Delete specified characters using -d option
+$ echo "my username is 432234" | tr -cd [:digit:]	
+# Complement the sets using -c option
+$ tr -cd [:print:] < file.txt	
+# Remove all non-printable character from a file
+$ tr -s '\n' ' ' < file.txt	
+# Join all the lines in a file into a single line
+$ cat cities | tr a-z A-Z
+# Transform lowercase to uppercase
+
+```
+
+#### tee
+
+`tee` take output of any command , while sending it to STDOUT , also save to file.
+
+- tees the output stream from command: one stream is displayed on STDOUT and other is saved to file.
+
+```bash 
+$ ls -l | tee newfile
+# list the contents of a directory on the screen and save the output to a file
+$ ls -l /etc | tee /tmp/ls-output
+
+```
+
+#### wc
+
+`wc` counts numbers of lines,words,characters in a file or list of files.
+
+```bash
+–l	Displays the number of lines
+-c	Displays the number of bytes
+-w	Displays the number of words
+$ wc -l 
+$ wc /var/log/*.log # all files in /var/log that has .log extension
+```
+
+#### cut
+
+`cut` used for manipulating column-based file and is designed to extract specific columns.
+
+- default column separator is the tab character
+- different delimiter can be given as command option
+
+```bash
+$ ls -l | cut -d" " -f3 # display third column delimited by blank space
+```
+
