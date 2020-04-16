@@ -491,4 +491,760 @@ CTRL-D
 $ atq
 ```
 
-## 
+# Mount and Unmounting
+
+`mount`  is used to attach a filesystem (which can be local to the computer or on a network) somewhere within the filesystem tree. The basic arguments are the **device node** and mount point. 
+
+```bash
+$ sudo mount /dev/sda5 /home 
+# attach fs contained in disk partition associated with the /dev/sda5 device node, into the filesystem tree at the /home mount point.
+$ sudo umount /home # umount
+```
+
+**If you want it to be automatically available every time the system starts up,** 
+
+- Edit **/etc/fstab** accordingly (the name is short for filesystem table). 
+- Looking at this file will show you the configuration of all pre-configured filesystems. 
+- **man fstab** will display how this file is used and how to configure it.
+
+Executing **mount** without any arguments will show all presently mounted filesystems.
+
+ `df -Th` (disk-free) 
+
+- display information about mounted filesystems,
+
+-  including the filesystem type, and usage statistics about currently used and available space.
+
+## NFS and Network Filesystems
+
+It is often necessary to share data across physical systems which may be either in the same location or anywhere that can be reached by the Internet. A network (also sometimes called distributed) filesystem may have all its data on one machine or have it spread out on more than one network node. A variety of different filesystems can be used locally on the individual machines; a network filesystem can be thought of as a grouping of lower level filesystems of varying types.
+
+System administrators mount remote users' home directories on a server in order to give them access to the same files and configuration files across multiple client systems. 
+
+- This allows the users to log in to different computers, yet still have access to the same files and resources.
+
+The most common such filesystem is named simply **NFS** (the **N**etwork **F**ile**s**ystem). 
+
+Another Type for Microsoft is **CIFS** (Common Internet File System)(also termed **SAMBA**).
+
+### NFS on the SERVER
+
+NFS uses daemons and other system servers.
+
+```bash
+$ sudo systemctl start nfs
+```
+
+The text file `/etc/export`contains the directories and permissions that a host is willing to share with other systems over NFS. An entry in this file may look like the following:
+
+```bash
+/projects *.example.com(rw) # allows the directory /projects to be mounted using NFS with read and write (rw) permissions and shared with other hosts in the example.com domain.
+```
+
+After modifying the `/etc/exports`file
+
+```bash
+sudo exportfs -av # to notify linux about directories allowed to be remotely mounted using NFS.
+```
+
+Alternatively, restart NFS
+
+```bash
+$ sudo systemctl restart nfs # heavier and halt NFS before starting it up again
+$ sudo systemctl enable nfs
+```
+
+**Note**: On RHEL/CentOS 8**,** the service is called **nfs-server**, not **nfs**).
+
+### NFS on the CLIENT
+
+On client machine, to mount remote filesystem automatically upon system boot.
+
+**Modify** `/etc/fstab` , an example entry follows:
+
+```bash
+# /etc/fstab
+
+servername:/projects /mnt/nfs/projects nfs defaults 0 0
+```
+
+**Note: **you may want to use the **nofail** option in **fstab** in case the NFS server is not live at boot.
+
+Or alternatively, mount without a reboot, or as a one time mount
+
+```bash
+$ sudo mount servername:/projects /mnt/nfs/projects
+```
+
+### Showing Filesystems mounted
+
+```bash
+cat /etc/fstab
+mount
+cat /proc/mounts
+```
+
+# Overview of User Directories
+
+Each user has a home directory under `/home`
+
+Root user has `/root`
+
+### /bin and /sbin
+
+`/bin` - contain executable binaries, essential commands used to boot system or in single-user mode, and essential commands by all system users, such as cat,cp,ls,mv,ps,rm.
+
+`/sbin` - contain essential binaries related to system administration, such as **fsck and ip**.
+
+`/usr/bin or /usr/sbin` - Traditionally for non-traditional commands. 
+
+- Newest linux distro usually symbolically linked
+  -  `/usr/bin` and `/bin` together.
+  -  `/usr/sbin` and `/sbin` together.
+
+### /proc filesystem
+
+**Pseudo-filesystems** - no permanent presence anywhere on disk.
+
+The `/proc` filesystem is very useful because the information it reports is gathered only as needed and never needs storage on the disk.
+
+`/proc` contains virtual files ( files that exist only in memory) that permits viewing constantly changing kernel data.
+
+- Files and directories that mimic kernel structure and config info.
+- No real files, but runtime system informations
+  - e.g system memory, device mounted, hardware configuration,
+
+```bash
+/proc/cpuinfo
+/proc/interrupts
+/proc/meminfo
+/proc/mounts
+/proc/partitions
+/proc/version
+# Shows there is a directory for every process running on the system containing vital information.
+
+/proc has subdirectories as well,
+
+/proc/<Process-ID-#>
+/proc/sys
+# Shows avirtual directory that contains a lot of information about the entire system, in particular its hardware and configuration
+
+```
+
+### /dev
+
+`/dev` - contains **device nodes** - a type of pseudo-file used by most hardware and software devices, except for network devices.
+
+- Empty on the disk partition when it is not mounted
+- Contains entries which are created by the `udev`(device manager for linux kernel) system, which creates and manages device nodes on Linux, creating them dynamically when devices are found. The /dev directory contains items such as:
+  - /dev/sda1 (first partition on the first hard disk)
+  - /dev/lp1 (second printer)
+  - /dev/random (a source of random numbers).
+
+### /var - variable
+
+`var` - contains files that are expected to change insize and content as the system is running
+
+```bash
+System log files: /var/log
+Packages and database files: /var/lib
+Print queues: /var/spool
+Temporary files: /var/tmp.
+```
+
+- The `/var` directory may be put on its own filesystem so that growth of the files can be accommodated and any exploding  file sizes do not fatally affect the system. 
+
+- Network services directories such as /var/ftp (the FTP service) and /var/www (the HTTP web service) are also found under /var.
+
+### /etc
+
+`etc` - home for system configuration file
+
+- It contains no binary programs, although there are some executable scripts. 
+- For example, `/etc/resolv.conf` tells the system where to go on the network to obtain host name to IP address mappings (DNS). 
+- **Files like passwd, shadow and group for managing user accounts are found in the /etc directory.** 
+- While some distributions have historically had their own extensive infrastructure under /etc 
+  -  Red Hat and SUSE have used /etc/sysconfig.
+
+**Note that /etc is for system-wide configuration files and only the superuser can modify files there. User-specific configuration files are always found under their home directory.**
+
+### /boot
+
+`boot` - contains few essential files needed to boot the system.
+
+- For every alternative kernel installed on the system there are four files:
+
+- vmlinuz - The compressed Linux kernel, required for booting.
+- initramfs - The initial ram filesystem, required for booting, sometimes called initrd, not initramfs.
+- config - The kernel configuration file, only used for debugging and bookkeeping.
+- System.map - Kernel symbol table, only used for debugging.
+
+**GRUB (Grand Unified bootloader) files such as `/boot/grub/grub.conf` or `/boot/grub2/grub2.cfg`** are found here.
+
+### /lib and /lib64
+
+`lib` contains 32 bit libraries (common code shared by applications and needed for them to run) for essential programs in `/bin` and `/sbin`
+
+- Library filenames either start with `ld` or `lib`
+  - e.g `/lib/libncurses.so.5.9`
+
+Most are known as dynamically loaded libraries/shared libraries or Shared objects(SO).
+
+`lib64` for 64-bit libraries.
+
+**On recent Linux distributions, just like for /bin and /sbin, the directories just point to those under /usr.**
+
+**Kernel modules (kernel code, often device drivers, that can be loaded and unloaded without re-starting the system) are located in /lib/modules/<kernel-version-number>. **
+
+### /media, /run and /mnt - Removable Media
+
+- Removable media, such as USB drives, CDs and DVDs. 
+
+- To make the material accessible through the regular filesystem, it has to be mounted at a convenient location. 
+
+- Most Linux systems are configured so any removable media are automatically mounted when the system notices something has been plugged in.
+
+Historically this was done under the **/media** directory, 
+
+- Modern Linux distributions place these mount points under the **/run** directory. 
+  - AUSB pen drive with a label ***\*myusbdrive\**** for a user name `user` would be mounted at **/run/media/student/myusbdrive**.
+
+`/mnt`directory has been used since the early days of UNIX for temporarily mounting filesystems. 
+
+- These can be those on removable media, but more often might be network filesystems , which are not normally mounted. 
+- Or these can be temporary partitions, or so-called **loopback** filesystems, which are files which pretend to be partitions.
+
+### Additional Directories Under /:
+
+| **Directory Name ** | **Usage**                                                    |
+| ------------------- | ------------------------------------------------------------ |
+| /opt                | Optional application software packages                       |
+| /sys                | Virtual pseudo-filesystem giving information about the system and the hardware             Can be used to alter system parameters and for debugging purposes |
+| /srv                | Site-specific data served up by the system                                                                           Seldom used |
+| /tmp                | Temporary files; on some distributions erased across a reboot and/or may actually be a ramdisk in memory |
+| /usr                | Multi-user applications, utilities and data                  |
+
+### /usr Directory tree
+
+`/usr` contains non-essential programs and scripts
+
+| **Directory Name ** | **Usage**                                                    |
+| ------------------- | ------------------------------------------------------------ |
+| /usr/include        | Header files used to compile applications                    |
+| /usr/lib            | Libraries for programs in `usr/bin` and `/usr/sbin`          |
+| /usr/lib64          | 64-bit libraries for 64-bit programs in `/usr/bin`and `/usr/sbin` |
+| /usr/sbin           | Non-essential system binaries, such as system daemons        |
+| /usr/share          | Shared data used by applications, generally architecture-independent |
+| /usr/src            | Source code, usually for the Linux kernel                    |
+| /usr/local          | Data and programs specific to the local machine. Subdirectories include `bin`, `sbin`, `lib`, `share` ,`include` ,`etc`. |
+| /usr/bin            | This is the primary directory of executable commands on the system |
+
+
+
+# Managing Files and Directories
+
+### Diff
+
+`diff` is used to compare files and directories.
+
+**diff** is meant to be used for text files; for binary files, use `cmp`
+
+| **diff Option** | **Usage**                                                    |
+| --------------- | ------------------------------------------------------------ |
+| -c              | Provides a listing of differences that include three lines of context before and after the lines differing in content |
+| -r              | Used to recursively compare subdirectories, as well as the current directory |
+| -i              | Ignore the case of letters                                   |
+| -w              | Ignore differences in spaces and tabs (white space)          |
+| -q              | Be quiet: only report if files are different without listing the differences |
+
+```
+ diff [options] <filename1> <filename2>
+```
+
+### diff3 and patch
+
+#### diff3
+
+`diff3` compare 3 files at once. 
+
+- One file as reference for the other two
+  - e.g you and another developer made modification to the same file working at the same time independently
+- diff3 can show the differences based on the common file you both started with
+
+```bash
+$ diff3 MY-FILE COMMON-FILE YOUR-FILE
+```
+
+#### patch
+
+Many modifications to source code and configuration files are distributed utilizing patches with the **patch** program. 
+
+A `patch file` contains the deltas (changes) required to update an older version of a file to the new one. The patch files are actually produced by running ***\*diff\**** with the correct options:
+
+```bash
+$ diff -Nur originalfile newfile > patchfile
+```
+
+- Distribution of patch is more concise and efficient than distributing entire file.
+
+```bash
+# applying a patch
+$ patch -p1 < patchfile
+$ patch originalfile patchfile
+```
+
+### Using diff and patch
+
+```bash
+$ cd /tmp
+$ cp /etc/group /tmp
+$ dd if=/tmp/group of=/tmp/GROUP conv=ucase
+1+1 records in
+1+1 records out
+751 bytes copied, 0.0013365 s, 562 kB/s
+$ diff -Nur group GROUP > patchfile
+$ cat patchfile
+--- group       2020-04-16 17:43:33.845071800 +0800
++++ GROUP       2020-04-16 17:43:46.234982200 +0800
+@@ -1,55 +1,55 @@
+-root:x:0:
+-daemon:x:1:
+-bin:x:2:
+-sys:x:3:
+...
++NETDEV:X:114:USER
++USER:X:1000:
++DOCKER:X:999:USER
+...
+$ patch --dry-run group patchfile
+checking file group
+$ patch group patchfile # same as $ patch group < patchfile  or $ patch < patchfile
+patching file group
+diff group GROUP
+```
+
+
+
+## file Utility
+
+In Linux, a file's extension often does not categorize it might in other OS.
+
+- Cannot assume file.txt is a text file and not an executable program.
+- Filename is more meaningful to user than the system
+
+`file` is used to ascertained the real nature of the file.
+
+- For the file names given as arguments,
+-  it examines the contents and certain characteristics to determine whether the files are plain text, shared libraries, executable programs, scripts, or something else.
+
+# Backing Up Data
+
+`rsync` - more efficient, checks if file copied already exist. Copy only parts of file that have actually changed.
+
+- can also be used to copy file from one machine to another
+- Location designated in` target:path`, where `target` can be in the form of `someone@host`.
+- Efficient when recursively copying one directory tree to another. 
+  - Due to only differences transmitted over network.
+  - Often used to synchronize destination directory tree with origin.
+  - -r option to recursively walk down directory tree copying all files and directories below the one listed as source.
+
+`cp ` - copy files to and from destination on local machines.
+
+### rsync
+
+`rsync` is a very powerful utility. 
+
+```bash
+$ rsync sourcefile destinationfile
+$ rsync -r project-X archive-machine:archives/project-X
+#  back up project directory
+$ rsync --progress -avrxH  --delete sourcedir destdir
+```
+
+**Note: Always use -dry-run option to ensure that it is what you want**
+
+## Compressing data
+
+| **Command** | **Usage**                                                    |
+| ----------- | ------------------------------------------------------------ |
+| gzip        | The most frequently used Linux compression utility           |
+| bzip2       | Produces files significantly smaller than those produced by **gzip** |
+| xz          | The most space-efficient compression utility used in Linux   |
+| zip         | Is often required to examine and decompress archives from other operating systems |
+
+`tar` is often used to group files in an archive then compress the whole archive at once
+
+### gzip
+
+`gzip` - most often used Linux compression utility. Compress well and fast
+
+```bash
+$ gzip *	 # Compresses all files in the current directory; each file is compressed and renamed with a .gz extension
+$ zgip -r projectX	 # Compresses all files in the projectX directory, along with all files in all of the directories under projectX.
+$ gunzip foo # De-compresses foo found in the file foo.gz. 
+# Under the hood, the gunzip command is actually the same as gzip –d
+
+```
+
+### bzip2
+
+`bzip2` - different compression algorithm, produce significantly smaller files at the price of compression speed. Used for larger files
+
+```bash
+$ bzip2 * # Compresses all of the files in the current directory and replaces each file with a file renamed with a .bz2 extension
+$ bunzip2 *.bz2 # Decompresses all of the files with an extension of .bz2 in the current directory. 
+# Under the hood, bunzip2 is the same as calling bzip2 -d
+```
+
+### xz
+
+`xz` most space  efficient compression utility used in Linux. used to store archive of Linux Kernel. Trades slower compression speed for an eve nhigher compression ratio
+
+```bash
+$ xz * # Compresses all of the files in the current directory and replaces each file with one with a .xz extension
+$ xz foo # Compresses foo into foo.xz using the default compression level (-6), and removes foo if compression succeeds
+$ xz -dk bar.xz	# Decompresses bar.xz into bar and does not remove bar.xz even if decompression is successful
+$ xz -dcf a.txt b.txt.xz > abcd.txt # Decompresses a mix of compressed and uncompressed files to standard output, using a single command
+$ xz -d *.xz Decompresses the files compressed using xz
+```
+
+## Handling Files using Zip
+
+`zip` not often used to compressed files in Linux, but used to decompress archive from other OS.
+
+```bash
+$ zip backup * # Compresses all files in the current directory and places them in the backup.zip
+$ zip -r backup.zip ~ # Archives your login directory (~) and all files and directories under it in backup.zip
+$ unzip backup.zip	# Extracts all files in backup.zip and places them in the current directory
+
+```
+
+
+
+## Archiving and Compressing Data using Tar
+
+`tar` - **t**ape **ar**chive , originally used to archive fil eto magnetic tape. 
+
+- Allows you to create or extract files from an archive, called **tarball**
+- Optionally compress while creating and decompress when extracting.
+
+```bash
+$ tar xvf mydir.tar	# Extract all the files in mydir.tar into the mydir directory
+$ tar zcvf mydir.tar.gz mydir	# Create the archive and compress with gzip
+$ tar jcvf mydir.tar.bz2 mydir	# Create the archive and compress with bz2
+$ tar Jcvf mydir.tar.xz mydir	# Create the archive and compress with xz
+$ tar xvf mydir.tar.gz	# Extract all the files in mydir.tar.gz into the mydir directory
+```
+
+Note: You do not have to tell tar it is in gzip format
+
+
+
+### Archiving the Home Directory
+
+```bash
+$ tar -cvf /tmp/backup.tar ~ # same as tar -cvf /tmp/backup.tar /home/user
+
+# 3 Types of compression
+$ tar zcf /tmp/backup.tar.gz ~
+$ tar jcf /tmp/backup.tar.bz2 ~
+$ tar Jcf /tmp/backup.tar.xz ~
+# Comparision
+$ ls -lh /tmp/backup* # -h to make it human readable.
+
+```
+
+**xz** has the best compression, followed by **bz2** and then **gz**.
+
+## Disk-to-Disk copying (dd)
+
+`dd` is useful for making copies of raw disk space.
+
+- Back up Master Boot Record (MBR) - first 512 byte sector on disk that contains a table describing partition on that disks
+
+  ```bash
+  dd if=/dev/sda of=sda.mbr bs=512 count=1
+  # to make a copy of one disk onto another, will delete everything that previously existed on the second disk.
+  
+  ```
+
+  **DO NOT EXPERIMENT WITH THE COMMAND IF YOU DO NOT KNOW WHAT YOU ARE DOING**
+
+# User Environment
+
+`whoami` - identify current user
+
+`who` - list current logged-on users
+
+### Order of Startup File
+
+When first login, /etc/profile is read and evaluated followed by : 
+
+1. ~/.bash_profile
+2. ~/.bash_login
+3. ~/.profile 
+
+## Basics of Users and Groups
+
+`users` are assigned a unique user ID(uid), an iteger; normal users start with uid 1000 or greater.
+
+`groups` - **groups** for organizing users. 
+
+- Groups are collections of accounts with certain shared permissions. 
+
+- Control of group membership is administered through the **/etc/group** file, which shows a list of groups and their members. 
+
+- By default, every user belongs to a default or primary group. 
+  - When a user logs in, the group membership is set for their primary group and all the members enjoy the same level of access and privilege. 
+
+- Permissions on various files and directories can be modified at the group level.
+
+Users also have one or more group IDs (**gid**), including a default one which is the same as the user ID. 
+
+- These numbers are associated with names through the files ***\*/etc/passwd\**** and ***\*/etc/group\****. 
+- Groups are used to establish a set of users who have common interests for the purposes of access rights, privileges, and security considerations. 
+- Access rights to files (and devices) are granted on the basis of the user and the group they belong to.
+
+### Adding and Removing Users
+
+```bash
+$ sudo useradd testuser
+$ sudo /usr/sbin/useradd testuser # OpenSUSE
+# by default, sets the home directory to /home/testuser, populates it with some basic files (copied from /etc/skel) and adds a line to /etc/passwd such as:
+testuser:x:1002:1002::/home/testuser:/bin/bash
+
+$ userdel testuser # remove user but leave home directory intact
+$ userdel -r testuser # for full removal.
+
+$ id # info about current user
+uid=1000(user) gid=1000(user) groups=1000(user),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),108(lxd),114(netdev),999(docker)
+
+
+```
+
+### Adding and Removing Groups
+
+```bash
+$ sudo /usr/sbin/groupadd anewgroup
+
+$ sudo /usr/sbin/groupdel anewgroup # remove group
+
+$ groups testuser
+testuser : user docker 
+
+$ sudo /usr/sbin/usermod -a -G anewgroup testuser # Adding a user to an already existing group is done with usermod. 
+
+$ groups testuser
+rjsquirrel: user docker anewgroup
+
+# These utilities update /etc/group as necessary. 
+# Make sure to use the -a option, for append, so as to avoid removing already existing groups. 
+# groupmod can be used to change group properties, such as the Group ID (gid) with the -g option or its name with then -n option.
+
+# Removing a user from the group is somewhat trickier. The -G option to usermod must give a complete list of groups. 
+
+$ sudo /usr/sbin/usermod -G anewgroup testuser
+
+$ groups testuser
+rjsquirrel : user anewgroup
+
+
+```
+
+## The root Account
+
+`root` - powerful and full acess to system , superuser.
+
+- **sudo** for limited privilege to user account
+  - temporary
+  - Only for a specific subset of commands
+
+### su and sudo
+
+`su` - switch or substitute user to launch a new shell running as another user. Do not use unless necessary.
+
+`sudo` - preferred.
+
+### Elevating to root account
+
+**sudo** configuration files are stored in the **/etc/sudoers** file and in the **/etc/sudoers.d/** directory. By default, the **sudoers.d** directory is empty.
+
+## Environment Variables
+
+View the values of currently set environment variables. Use **set**, **env**, or ***\*export\**.**
+
+### Setting Environment Variables
+
+By default, variables created within a script are only available to the current shell
+
+- child processes (sub-shells) will not have access to values that have been set or modified. 
+- Allowing child processes to see the values requires use of the **export** command.
+
+```bash
+$ echo $shell # Show the value of a specific variable	
+$ export VARIABLE=value # Export a new variable value	
+$ VARIABLE=value; export VARIABLE # Export a new variable value	
+
+# Adding a variable permanently
+# Edit ~/.bashrc and add the line 
+export VARIABLE=value
+# source ~/.bashrc or just (dot). ~/.bashrc or just open a new bash
+
+# Set environment variables to be fed as a one shot to a command
+SDIRS=s_0* KROOT=/lib/modules/$(uname -r)/build make modules_install
+# feeds the values of the SDIRS and KROOT environment variables to the command make modules_install.
+```
+
+### HOME variable
+
+- represents home/login directory of user
+- cd without argument.
+- ~ is abbreviation for $HOME.
+  - cd $HOME and cd ~ is the same.
+
+#### PATH variable
+
+- ordered list of directories(the path)
+- Scanned when a command is given to find the appropriate program or script to run. 
+  - Each directory in the path is separated by colons (***\*:\****). 
+  - A null (empty) directory name (or ***\*./\****) indicates the current directory at any given time.
+
+```bash
+:path1:path2 # null directory before the first colon (:).
+ path1::path2 # null directory between path1 and path2. 
+
+ # To prefix a private bin directory to your path:
+ 
+ $ export PATH=$HOME/bin:$PATH
+```
+
+#### Shell Variable
+
+- points to user's default command shell
+- Usually bash
+
+```bash
+$ echo $SHELL
+/bin/bash
+```
+
+## PS1 Variable and the Command Line Prompt
+
+`Prompt Statement (**PS**) `is used to customize prompt string in  terminal windows to display the information you want.
+
+`PS1` is the primary prompt variable which controls what your command line prompt looks like. The following special characters can be included in `PS1:`
+
+```bash
+\u - User name
+\h - Host name
+\w - Current working directory
+\! - History number of this command
+\d - Date
+```
+
+### history
+
+`history` -  show previously entered commands in history buffer.
+
+- stored in ~/.bash_history. 
+
+  ```bash
+  HISTFILE
+  The location of the history file. 
+  HISTFILESIZE
+  The maximum number of lines in the history file (default 500). 
+  HISTSIZE 
+  The maximum number of commands in the history file. 
+  HISTCONTROL
+  How commands are stored. 
+  HISTIGNORE
+  Which command lines can be unsaved.
+  
+  
+  ```
+
+`!!` - bang bang to execute previous command
+
+`CTRL-R`  to search previous commands.
+
+```
+!	Start a history substitution
+!$	Refer to the last argument in a line
+!n	Refer to the nth command line
+!string	Refer to the most recent command starting with string
+```
+
+## Keyboard Shortcuts
+
+```
+Keyboard Shortcut	Task
+CTRL-L	Clears the screen
+CTRL-D	Exits the current shell
+CTRL-Z	Puts the current process into suspended background
+CTRL-C	Kills the current process
+CTRL-H	Works the same as backspace
+CTRL-A	Goes to the beginning of the line
+CTRL-W	Deletes the word before the cursor
+CTRL-U	Deletes from beginning of line to cursor position
+CTRL-E	Goes to the end of the line
+Tab	Auto-completes files, directories, and binaries
+```
+
+# File Ownership
+
+Every file is associated with a user, who is the owner
+
+File is also associated with a group which has an interest in the file and certain rights/permissions
+
+Read,Write,Execute
+
+```
+chown	Used to change user ownership of a file or directory
+chgrp	Used to change group ownership
+chmod	Used to change the permissions on the file, which can be done separately for owner, group and the rest of the world (often named as other)
+```
+
+## File Permission Modes and chmod
+
+Files have three kinds of permissions: read (r), write (w), execute (x). 
+
+ These permissions affect three groups of owners: user/owner (u), group (g), and others (o).
+
+```bash
+rwx: rwx: rwx
+ u:   g:   o
+$ ls -l somefile
+-rw-rw-r-- 1 student student 1601 Mar 9 15:04 somefile
+$ chmod uo+x,g-w somefile
+$ ls -l somefile
+-rwxr--r-x 1 student student 1601 Mar 9 15:04 somefile
+```
+
+- 4 - read permission 
+- 2 - write permission 
+- 1 - execute permission 
+- 7 - read/write/execute
+- 6 - read/write
+- 5 - read/execute.
+
+```bash
+$ chmod 755 somefile # 3 digits , RWX for User, RX for Group and Others.
+```
+
+### Chown
+
+`chown` - for changing file ownership
+
+```bash
+$ chown user file
+$ chown user:group file # change both owner and group at the same time
+```
+
+### Chgrp
+
+`chgrp` - for changing group ownership
+
+```bash
+$ chgroup group file
+```
+
