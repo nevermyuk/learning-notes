@@ -1720,3 +1720,132 @@ $ ssh someone@some_system
 $ scp <localfile> <user@remotesystem>:/home/user/ 
 ```
 
+# Printing
+
+## Common UNIX Printing System (CUPS)
+
+CUPS is designed around a print scheduler that manages print jobs, handles administrative commands, allows users to query the printer status, and manages the flow of data through all CUPS components.
+
+### Config Files
+
+`cupsd.conf` where most system-wide settings are located. 
+
+-  it does not contain any printer-specific details. 
+- Most of the settings available in this file relate to network security, 
+  - i.e. which systems can access CUPS network capabilities, 
+  - how printers are advertised on the local network, 
+  - what management features are offered.
+
+`printers.conf`  where you will find the printer-specific settings. 
+
+- For every printer connected to the system, a corresponding section describes the printer’s status and capabilities. 
+- This file is generated or modified only after adding a printer to the system, and should not be modified by hand.
+
+```bash
+To view config files
+$ ls -lF /etc/cups.
+```
+
+### Job Files
+
+CUPS store print requests as files under `/var/spool/cups`. Data files are prefixed with the letter **d** while control files are prefixed with the letter **c**.
+
+- After a printer successfully handles a job, data files are automatically removed. These data files belong to the **print queue**.
+
+### Log Files
+
+Log files are placed in ***\*/var/log/cups\**** and are used by the scheduler to record activities that have taken place. These files include access, error, and page records.
+
+```bash
+To view log files
+$ ls -l /var/log/cups
+```
+
+### Filters, Printer Drivers and Backend
+
+CUPS uses 
+
+- **filters** to convert job file format to printable formats.
+
+- **Printer drivers** contain description for currently connected and configured printers,
+  - stored under `/etc/cups/ppd/`
+  - Print data is then sent to printer through a filter, via a **backend** that helps to locate devices connected to the system
+
+When print command is executed, 
+
+1. **schedular** validate the command and process print job.
+2. create job file according to setting specified in configuration files
+3. Simultaneously, scheduler records activity in log files
+4. Job files processed with help of **filter, printer driver**, and **backend**, and then send to **printer**.
+
+## Managing CUPS
+
+```bash
+$ systemctl status cups
+$ sudo systemctl [enable|disable] cups
+$ sudo systemctl [start|stop|restart] cups
+Access CUPS web interface
+http://localhost:631.
+```
+
+### Printing from CLI
+
+```bash
+$ lp <filename>	# To print the file to default printer
+$ lp -d printer <filename>	# To print to a specific printer (useful if multiple $ printers are available)
+$ program | lp
+$ echo string | lp	# To print the output of a program
+$ lp -n number <filename>	# To print multiple copies
+$ lpoptions -d printer	# To set the default printer
+$ lpq -a	# To show the queue status
+$ lpadmin	# To configure printer queues
+```
+
+## Managing Print job
+
+```bash
+$ lpstat -p -d	# To get a list of available printers, along with their status
+$ lpstat -a	# To check the status of all connected printers, including job numbers
+$ cancel job-id
+OR
+$ lprm job-id	# To cancel a print job
+$ lpmove job-id newprinter	# To move a print job to new printer
+```
+
+## Working with PDF
+
+## qpdf
+
+
+
+| **Command**                                                  | **Usage**                                                    |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| qpdf --empty --pages 1.pdf 2.pdf --12.pdf                    | Merge the two documents **1.pdf** and **2.pdf**. The output will be saved to **12.pdf**. |
+| qpdf --empty --pages 1.pdf 1-2 -- new.pdf                    | Write only pages 1 and 2 of **1.pdf**. The output will be saved to **new.pdf**. |
+| qpdf --rotate=+90:1 1.pdf 1r.pdf                            qpdf --rotate=+90:1-z 1.pdf 1r-all.pdf | Rotate page 1 of **1.pdf** 90 degrees clockwise and save to **1r.pdf**Rotate all pages of **1.pdf** 90 degrees clockwise and save to **1r-all.pdf** |
+| qpdf --encrypt mypw mypw 128 -- public.pdf private.pdf       | Encrypt with 128 bits **public.pdf** using as the passwd **mypw** with output as **private.pdf** |
+| qpdf --decrypt --pasword=mypw private.pdf file-decrypted.pdf | Decrypt **private.pdf** with output as **file-decrypted.pdf.** You will be prompted for the password |
+
+### pdftk
+
+| Command                                                | Usage                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------ |
+| pdftk 1.pdf 2.pdf cat output 12.pdf                    | Merge the two documents **1.pdf** and **2.pdf**. The output will be saved to **12.pdf**. |
+| pdftk A=1.pdf cat A1-2 output new.pdf                  | Write only pages 1 and 2 of **1.pdf**. The output will be saved to ***\*new.pdf\****. |
+| pdftk A=1.pdf cat A1-endright output new.pdf           | Rotate all pages of **1.pdf** 90 degrees clockwise and save result in **new.pdf**. |
+| **pdftk public.pdf output private.pdf user_pw PROMPT** | encrypt file                                                 |
+
+### Ghostscript
+
+- used as interpreter for Postscript and PDF
+- Complicated usage
+
+### pdfmod
+
+It is a simple application that provides a graphical interface for modifying PDF documents. 
+
+- reorder, rotate, and remove pages
+- export images from a document
+- edit the title, subject, and author
+- add keywords
+- combine documents using drag-and-drop action
