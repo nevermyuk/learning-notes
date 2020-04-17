@@ -1565,3 +1565,158 @@ $ wc /var/log/*.log # all files in /var/log that has .log extension
 $ ls -l | cut -d" " -f3 # display third column delimited by blank space
 ```
 
+# Network
+
+## Domain Name System(DNS) / Nameservers(NS)
+
+```bash
+$ cat /etc/host 
+$ cat /etc/resolv.conf
+$ host google.com # find hostnames
+$ nslookup google.com # find nameservers
+$ dig google.com # domain name system from nameserver
+```
+
+## Network Interfaces
+
+Connection Channel between a device and a network
+
+- Physically : Can proceed through a Network Interface card(NIC)
+- Virtual: Abstractly implemented as software.
+
+Can have multiple Network Interface running at once.
+
+```bash
+$ /sbin/ip addr show # view ip addr
+$ /sbin/ip route show # view routing
+```
+
+### ping
+
+`ping`  check whether a network attached to network can receive and send data.
+
+```bash
+$ ping hostname
+```
+
+### route
+
+`route`  to view or change IP routing table to add,delete, or modify specific(static) routes to specific hosts or networks.
+
+```bash
+$ route –n or ip route # Show current routing table
+$ route add -net address or ip route add # Add static route
+$ route del -net address or ip route del # Delete static route
+```
+
+### traceroute
+
+`traceroute` used to inspect route which data packets takes to reach destination host
+
+- troubleshoot network delays and errors
+
+```bash
+$ traceroute www.google.com
+```
+
+## More networking tools
+
+| **Networking Tools** | **Description**                                              |
+| -------------------- | ------------------------------------------------------------ |
+| ethtools             | Queries network interfaces and can also set various parameters such as the speed |
+| netstat              | Displays all active connections and routing tables. Useful for monitoring performance and troubleshooting |
+| nmap                 | Scans open ports on a network. Important for security analysis |
+| tcpdump              | Dumps network traffic for analysis                           |
+| iptraf               | Monitors network traffic in text mode                        |
+| mtr                  | Combines functionality of ping and traceroute and gives a continuously updated display |
+| dig                  | Tests DNS workings. A good replacement for host and nslookup |
+
+```bash
+ethtool eth0
+netstat -r  # all active connection and routing table displayed
+sudo nmap -sP ip #open ports of network displayed
+```
+
+### Network Troubleshooting
+
+```bash
+$ /sbin/ifconfig # check if Ethernet device up and running
+$ ip addr show # get ip
+# if devices have no IP address
+$ sudo systemctl restart NetworkManager
+$ sudo systemctl restart network
+$ sudo service NetworkManager restart
+$ sudo service network restart
+# above steps should have fixed it else,
+$ sudo dhclient eth0 # get fresh address for eth0
+
+$ hostname # get hostname
+$ sudo ping -c 3 google.com
+# if unknown host google.com, something is wrong with DNS
+$ host 8.8.8.8 # DNS server configured in /etc/resolv.conf, use this to reconfigure
+
+$ dig google.com # alternative
+
+# if both fails, it may be due to DNS server down, or DNS not available on machine, else route to DNS server is not correct
+
+$ sudo traceroute 8.8.8.8
+
+$ ip route show # likely to point to network interface and IP of router.
+
+$ mtr --report-cycles 8.8.8.8 # enhanced version of traceroute, like top.
+```
+
+
+
+## Downloading Files
+
+### wget
+
+`wget` 
+
+- large file downloads
+- recursive download
+- password-required downloads
+- multiple file downloads
+
+```bash
+$ wget <url>
+```
+
+### curl
+
+`curl`  source code or content of web page.
+
+```bash
+$ curl <url>
+$ curl -o saved.html http://www.mysite.com
+```
+
+## File Transfer Protocol (FTP)
+
+Transfer file with remote computer using FTP.
+
+**Common command utilities**
+
+```
+ftp
+sftp
+ncftp
+yafc (Yet Another FTP Client).
+rsync ( PREFERRED AS IT IS MORE SECURE)
+```
+
+## Secure Shell ( SSH)
+
+`Secure Shell (SSH)` is a cryptographic network protocol used for secure data communication.
+
+```bash
+$ ssh someone@some_system
+```
+
+### Copying files securely with scp
+
+```bash
+$ scp <localfile> <user@remotesystem>:/home/user/ 
+```
+
