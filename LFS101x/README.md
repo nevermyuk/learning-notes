@@ -1,3 +1,9 @@
+
+
+
+
+
+
 # The Boot Process
 
 [Boot Process]()
@@ -141,7 +147,7 @@ One **systemd** command (**systemctl**) is used for most basic tasks.
     - Enabling or disabling a system service from starting up at system boot:
       ***\*$ sudo systemctl enable|disable nfs.service\****
 
-In most cases, the ***\**\*.service\*\**\*** can be omitted.
+In most cases, the **.service** can be omitted.
 
 
 
@@ -1849,3 +1855,267 @@ It is a simple application that provides a graphical interface for modifying PDF
 - edit the title, subject, and author
 - add keywords
 - combine documents using drag-and-drop action
+
+# Local Security Principles
+
+## User Accounts
+
+- Linux Kernel allows properly authenticated user to access files and applications.
+- Each user is identified by unique integer ; UserID or UID.
+- Separate database associates username with each UID.
+
+Upon user creation, new user info is added to user DB and user's home directory must be created and populated with some essential files.
+
+```
+$ useradd
+$ userdel
+```
+
+
+
+**`/etc/passwd` is used to store the following information**
+
+| **Field Name**           | **Details**                                                  | **Remarks**                                                  |
+| ------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **Username**             | User login name                                              | Should be between 1 and 32 characters long                   |
+| **Password**             | User password (or the character **x** if the password is stored in the **/etc/shadow** file) in encrypted format | Is never shown in Linux when it is being typed; this stops prying eyes |
+| **User ID (UID)**        | Every user must have a user id (UID)                         | UID 0 is reserved for root user                                                            UID's ranging from 1-99 are reserved for other predefined accounts                                                                                               UID's ranging from 100-999 are reserved for system accounts and groups                                                                                                   Normal users have UID's of 1000 or greater |
+| **Group ID (GID)**       | The primary Group ID (GID); Group Identification Number stored in the **/etc/group** file | Is covered in detail in the chapter on *Processes*           |
+| ***\*User Info\****      | This field is optional and allows insertion of extra information about the user such as their name | For example: **john Doe**                                    |
+| ***\*Home Directory\**** | The absolute path location of user's home directory          | For example: **/home/johndoe/**                              |
+| ***\*Shell\****          | The absolute location of a user's default shell              | For example: **/bin/bash**                                   |
+
+### Types of Accounts
+
+- root
+- System
+- Normal
+- Network
+
+`Note`: For security, advised to grant minimum privilege possible and necessary to account, and remove inactive accounts.
+
+#### last
+
+`last` utility, shows the last time each user logged into the system, can be used to identify potentially inactive account that are candidates for removal.
+
+```bash
+$ last
+```
+
+### root
+
+- Most privileged account on a Linux/UNIX system.
+- Ability to carry out all system administration
+  - Add account
+  - Change user password
+  - Examine log files
+  - Install software
+- **NO SECURITY RESTRICTIONS IMPOSED** 
+- Shell prompt will display as #
+
+## Operations Requiring Root Privilege
+
+- Creating, removing and managing user accounts
+- Managing software packages
+- Removing or modifying system files
+- Restarting system services.
+
+### Operations Not Requiring Root Privilege
+
+- Running a network client - Sharing file over network
+- Using devices such as printer - Printing over network
+- Operation on files that user has proper permission access 
+- Running SUID-root application - **passwd**
+
+**SUID** (**S**et owner **U**ser **ID** upon execution - similar to the Windows "run as" feature).
+
+- A special kind of file permission given to a file. 
+- Use of SUID provides temporary permissions to a user to run a program with the permissions of the file *owner* (which may be root) instead of the permissions held by the *user*.
+
+## SUDO vs SU
+
+| **su**                                                       | **sudo**                                                     |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| When elevating privilege, you need to enter the root password. Giving the root password to a normal user should never, ever be done. | When elevating privilege, you need to enter the user’s password and not the root password. |
+| Once a user elevates to the root account using **su**, **the user can do anything that the root user can do for as long as the user wants, without being asked again for a password.** | Offers more features and is considered m**ore secure and more configurable.** Exactly what the user is allowed to do can be precisely controlled and limited. By default the user will either always have to keep giving their password to do further operations with **sudo**, or can avoid doing so for a configurable time interval. |
+| The command has limited logging features.                    | The command has **detailed logging features.**               |
+
+## sudo
+
+`sudo`
+
+- ability to keep track of unsuccessful attempts at gaining root access
+- User's authorization for using `sudo is based on config info stored in ` `/etc/sudoers` and in `/etc/sudoers.d` directory
+
+```bash
+# If user execute sudo bash without successfully authenticating the user ;
+authentication failure; logname=op uid=0 euid=0 tty=/dev/pts/6 ruser=op rhost= user=op
+conversation failed
+auth could not identify password for [op]
+op : 1 incorrect password attempt ;
+TTY=pts/6 ; PWD=/var/log ; USER=root ; COMMAND=/bin/bash
+```
+
+```bash
+$ sudo useradd newuser # add new user
+$ sudoer passwd newuser
+
+$ sudo visudo  # add user to /etc/sudoers for ALL permissions
+newuser ALL=(ALL) ALL
+# Alternatively, create a file in /etc/sudoers.d/newuser with
+# newuser ALL=(ALL) ALL
+
+$ sudo su newuser #login as new user
+$ ssh newuser@ip 
+```
+
+
+
+## sudoers File
+
+when `sudo` is invoked, 
+
+- trigger will look at /etc/sudoers and files in `/etc/sudoers.d` to determine if user has right to use `sudo` and the scope of their privilege.
+
+- **Unknown user request and requests to do operations not allowed to the user even with sudo are reported**
+
+  ```***\*who where = (as_whom) what\****```
+
+`/etc/sudoers` contains a lot of documentation in it on how to customize
+
+**Linux Distros now prefer you t oadd a file in directory `/etc/sudoers.d` with a name same as the user**
+
+- To contain individual user's sudo configuration
+- **Leave the master config(`/etc/sudoers`) untouched except for changes that affect all users**
+
+### visudo
+
+`visudo` ensures only one person editing the file at a time, with proper permissions and refuses to write out the file and exit if there are syntax errors in the changes made.
+
+```bash
+$ visudo /etc/sudoers
+$ visudo -f /etc/sudoers.d/user
+```
+
+### Command Logging
+
+By default, `sudo` commands and any failure logged in;
+
+-  `/var/log/auth.log` in Debian distro family
+- `/var/log/messages` or `/var/log/secure` in other systems
+
+Important safeguard to allow tracking and accountability of `sudo`.
+
+Typical entry of the message contains:
+
+- - - Calling username
+    - Terminal info
+    - Working directory
+    - User account invoked
+    - Command with arguments
+
+```bash
+$ sudo whoami
+root
+```
+
+## Process Isolation
+
+Linux is considered more secure than other OS because processes naturally isolated from each other
+
+- Process normally cannot access resources of another process 
+  - or even when that process is running with the same user privilege
+- Linux makes it difficult for virus and security exploit to access and attack random resource on a system
+
+### Additional Security Mechanisms
+
+- `Control Groups(cgroups)` - Allow system admin to gorup processes and associate finite resource to each cgroup
+- `Containers` - Possible to run multiple isolated Linux systems(containers) on a system by relying on cgroups
+- `Virtualization` - Hardware emulated in such a way that not only process is isolated, but entire systems are run simultaneously as isolated and insulated guests(VM) on one physical hosts
+
+## Hardware device access
+
+Linux limits user access to non-networking hardware devices in a manner that is extremely similar to regular file access. 
+
+- Application interact by engaging the file system layer(which is independent of the actual device or hardware the file resides on).
+  - Layer open a device special file(device node) under `/dev` directory that corresponds to the device being accessed.
+  - Each device special file has standard owner,group and world permission fields.
+- Security naturally enforced just as it is when standard file are accessed.
+
+##### Hard disks for example
+
+- represented as `/dev/sd*`
+
+  - root user can read and write to disk in a raw fashion
+
+  - ```bash
+    $ echo hello world > /dev/sda1
+    ```
+
+    **Regulars users are never allowed to do so.**
+
+    
+
+## How Passwords are Stored
+
+- Stored in `/etc/shadow` in encrypted format.
+- Only those with **root access** can read or modify.
+
+#### Password Algorithm
+
+- SHA-512 (Secure hashing Algorithm 512 bits), developed by US NSA to encrypt passwords
+- Widely used for security applications and protocols
+- Protocols include TLS,SSL,PHP,SSH,S/MIME and IPSEC.
+- SHA-512 is the most tested algorithm
+
+## Good Password Practice
+
+- Password aging - prompt user to create new password after a specific period.
+  - Use `chage` - used to configure password expiry info for a user
+  - Ensure if password cracked, only usable for a limited time.
+
+```bash
+$ chage --list newuser
+$ sudo chage -E 2020-12-04 newuser
+chage --list newuser
+sudo userdel newuser
+```
+
+
+
+- Force strong password using **P**luggable **A**uthentication **M**odules(**PAM**)
+  - Pam can be configured to automatically verify that password created or modifed using `passwd` is sufficiently strong.
+  - `pam` config is implemented using a library called `pam_cracklib.so` that can also be replaced by `pam_passwdqc.so` for more options
+- Password cracking programs - `John The Ripper` to secure password file and detect weak password entries
+
+
+
+## Boot Loader Password
+
+- Secure boot process with secure password to prevent someone from bypassing the user authentication step
+  - Will stop user from editing bootloader config during boot process 
+  - But **not** prevent user from booting from an alternative boot me dia such as pen drives.
+  - **Used with BIOS password for full protection**
+
+[GRUB2 Passwords](https://help.ubuntu.com/community/Grub2/Passwords)
+
+## Hardware Vulnerability
+
+When hardware is physically accessible, security can be compromised by:
+
+- - - Key logging
+      Recording the real time activity of a computer user including the keys they press. The captured data can either be stored locally or transmitted to remote machines.
+    - Network sniffing
+      Capturing and viewing the network packet level data on your network.
+    - Booting with a live or rescue disk
+    - Remounting and modifying disk content.
+
+The guidelines of security are:
+
+- - - Lock down workstations and servers.
+    - Protect your network links such that it cannot be accessed by people you do not trust.
+    - Protect your keyboards where passwords are entered to ensure the keyboards cannot be tampered with.
+    - Ensure a password protects the BIOS in such a way that the system cannot be booted with a live or rescue DVD or USB key.
+
+
+
